@@ -1,82 +1,166 @@
-(function () {
-  "use strict"; // Start of use strict
+//DOM elements
+const DOMstrings = {
+  stepsBtnClass: "multisteps-form__progress-btn",
+  stepsBtns: document.querySelectorAll(`.multisteps-form__progress-btn`),
+  stepsBar: document.querySelector(".multisteps-form__progress"),
+  stepsForm: document.querySelector(".multisteps-form__form"),
+  stepsFormTextareas: document.querySelectorAll(".multisteps-form__textarea"),
+  stepFormPanelClass: "multisteps-form__panel",
+  stepFormPanels: document.querySelectorAll(".multisteps-form__panel"),
+  stepPrevBtnClass: "js-btn-prev",
+  stepNextBtnClass: "js-btn-next",
+};
 
-  var sidebar = document.querySelector(".sidebar");
-  var sidebarToggles = document.querySelectorAll(
-    "#sidebarToggle, #sidebarToggleTop"
+//remove class from a set of items
+const removeClasses = (elemSet, className) => {
+  elemSet.forEach((elem) => {
+    elem.classList.remove(className);
+  });
+};
+
+//return exect parent node of the element
+const findParent = (elem, parentClass) => {
+  let currentNode = elem;
+
+  while (!currentNode.classList.contains(parentClass)) {
+    currentNode = currentNode.parentNode;
+  }
+
+  return currentNode;
+};
+
+//get active button step number
+const getActiveStep = (elem) => {
+  return Array.from(DOMstrings.stepsBtns).indexOf(elem);
+};
+
+//set all steps before clicked (and clicked too) to active
+const setActiveStep = (activeStepNum) => {
+  //remove active state from all the state
+  removeClasses(DOMstrings.stepsBtns, "js-active");
+
+  //set picked items to active
+  DOMstrings.stepsBtns.forEach((elem, index) => {
+    if (index <= activeStepNum) {
+      elem.classList.add("js-active");
+    }
+  });
+};
+
+//get active panel
+const getActivePanel = () => {
+  let activePanel;
+
+  DOMstrings.stepFormPanels.forEach((elem) => {
+    if (elem.classList.contains("js-active")) {
+      activePanel = elem;
+    }
+  });
+
+  return activePanel;
+};
+
+//open active panel (and close unactive panels)
+const setActivePanel = (activePanelNum) => {
+  //remove active class from all the panels
+  removeClasses(DOMstrings.stepFormPanels, "js-active");
+
+  //show active panel
+  DOMstrings.stepFormPanels.forEach((elem, index) => {
+    if (index === activePanelNum) {
+      elem.classList.add("js-active");
+
+      setFormHeight(elem);
+    }
+  });
+};
+
+//set form height equal to current panel height
+const formHeight = (activePanel) => {
+  const activePanelHeight = activePanel.offsetHeight;
+
+  DOMstrings.stepsForm.style.height = `${activePanelHeight}px`;
+};
+
+const setFormHeight = () => {
+  const activePanel = getActivePanel();
+
+  formHeight(activePanel);
+};
+
+//STEPS BAR CLICK FUNCTION
+DOMstrings.stepsBar.addEventListener("click", (e) => {
+  //check if click target is a step button
+  const eventTarget = e.target;
+
+  if (!eventTarget.classList.contains(`${DOMstrings.stepsBtnClass}`)) {
+    return;
+  }
+
+  //get active button step number
+  const activeStep = getActiveStep(eventTarget);
+
+  //set all steps before clicked (and clicked too) to active
+  setActiveStep(activeStep);
+
+  //open active panel
+  setActivePanel(activeStep);
+});
+
+//PREV/NEXT BTNS CLICK
+DOMstrings.stepsForm.addEventListener("click", (e) => {
+  const eventTarget = e.target;
+
+  //check if we clicked on `PREV` or NEXT` buttons
+  if (
+    !(
+      eventTarget.classList.contains(`${DOMstrings.stepPrevBtnClass}`) ||
+      eventTarget.classList.contains(`${DOMstrings.stepNextBtnClass}`)
+    )
+  ) {
+    return;
+  }
+
+  //find active panel
+  const activePanel = findParent(
+    eventTarget,
+    `${DOMstrings.stepFormPanelClass}`
   );
 
-  if (sidebar) {
-    var collapseEl = sidebar.querySelector(".collapse");
-    var collapseElementList = [].slice.call(
-      document.querySelectorAll(".sidebar .collapse")
-    );
-    var sidebarCollapseList = collapseElementList.map(function (collapseEl) {
-      return new bootstrap.Collapse(collapseEl, { toggle: false });
-    });
+  let activePanelNum = Array.from(DOMstrings.stepFormPanels).indexOf(
+    activePanel
+  );
 
-    for (var toggle of sidebarToggles) {
-      // Toggle the side navigation
-      toggle.addEventListener("click", function (e) {
-        document.body.classList.toggle("sidebar-toggled");
-        sidebar.classList.toggle("toggled");
-
-        if (sidebar.classList.contains("toggled")) {
-          for (var bsCollapse of sidebarCollapseList) {
-            bsCollapse.hide();
-          }
-        }
-      });
-    }
-
-    // Close any open menu accordions when window is resized below 768px
-    window.addEventListener("resize", function () {
-      var vw = Math.max(
-        document.documentElement.clientWidth || 0,
-        window.innerWidth || 0
-      );
-
-      if (vw < 768) {
-        for (var bsCollapse of sidebarCollapseList) {
-          bsCollapse.hide();
-        }
-      }
-    });
+  //set active step and active panel onclick
+  if (eventTarget.classList.contains(`${DOMstrings.stepPrevBtnClass}`)) {
+    activePanelNum--;
+  } else {
+    activePanelNum++;
   }
 
-  // Prevent the content wrapper from scrolling when the fixed side navigation hovered over
+  setActiveStep(activePanelNum);
+  setActivePanel(activePanelNum);
+});
 
-  var fixedNaigation = document.querySelector("body.fixed-nav .sidebar");
+//SETTING PROPER FORM HEIGHT ONLOAD
+window.addEventListener("load", setFormHeight, false);
 
-  if (fixedNaigation) {
-    fixedNaigation.on("mousewheel DOMMouseScroll wheel", function (e) {
-      var vw = Math.max(
-        document.documentElement.clientWidth || 0,
-        window.innerWidth || 0
-      );
+//SETTING PROPER FORM HEIGHT ONRESIZE
+window.addEventListener("resize", setFormHeight, false);
 
-      if (vw > 768) {
-        var e0 = e.originalEvent,
-          delta = e0.wheelDelta || -e0.detail;
-        this.scrollTop += (delta < 0 ? 1 : -1) * 30;
-        e.preventDefault();
-      }
-    });
-  }
+//changing animation via animation select !!!YOU DON'T NEED THIS CODE (if you want to change animation type, just change form panels data-attr)
 
-  var scrollToTop = document.querySelector(".scroll-to-top");
+const setAnimationType = (newType) => {
+  DOMstrings.stepFormPanels.forEach((elem) => {
+    elem.dataset.animation = newType;
+  });
+};
 
-  if (scrollToTop) {
-    // Scroll to top button appear
-    window.addEventListener("scroll", function () {
-      var scrollDistance = window.pageYOffset;
+//selector onchange - changing animation
+const animationSelect = document.querySelector(".pick-animation__select");
 
-      //check if user is scrolling up
-      if (scrollDistance > 100) {
-        scrollToTop.style.display = "block";
-      } else {
-        scrollToTop.style.display = "none";
-      }
-    });
-  }
-})(); // End of use strict
+animationSelect.addEventListener("change", () => {
+  const newAnimationType = animationSelect.value;
+
+  setAnimationType(newAnimationType);
+});
