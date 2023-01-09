@@ -1,4 +1,5 @@
 import React from "react";
+import axios, { Axios } from "axios";
 
 const testData = [
   {
@@ -21,12 +22,40 @@ const testData = [
 const CardList = (props) => {
   return (
     <>
-      {testData.map((profile) => (
+      {props.profiles.map((profile) => (
         <Card {...profile} />
       ))}
     </>
   );
 };
+
+class Form extends React.Component {
+  state = {
+    userName: "",
+  };
+  handleSubmit = async (event) => {
+    event.preventDefault();
+    const resp = await axios.get(
+      `https://api.github.com/users/${this.state.userName}`
+    );
+    this.props.onSubmition(resp.data);
+  };
+
+  render() {
+    return (
+      <form onSubmit={this.handleSubmit} action="">
+        <input
+          type="text"
+          placeholder="github name"
+          value={this.state.userName}
+          onChange={(event) => this.setState({ userName: event.target.value })}
+          required
+        />
+        <button>Add Card</button>
+      </form>
+    );
+  }
+}
 
 class Card extends React.Component {
   render() {
@@ -44,11 +73,19 @@ class Card extends React.Component {
 }
 
 class App extends React.Component {
+  state = {
+    profile: testData,
+  };
+
+  addNewProfile = (profileData) => {
+    console.log('app', profileData);
+  };
   render() {
     return (
       <div>
         <div className="header">{this.props.title}</div>
-        <CardList />
+        <Form onSubmition={this.addNewProfile}/>
+        <CardList profiles={this.state.profile} />
       </div>
     );
   }
